@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+ENV/
+env/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Linters & Typing
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+node_modules/
+.pnp
+.pnp.js
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.dist/
+dist/
+dist-ssr/
+*.local
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+data/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# LaTeX auxiliary files (compilation artifacts)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+docs/memoria/*.pdf
+!docs/memoria/img/*.pdf
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# UBU specific / personal reference docs
+TFG_Doc/
+scratch/
+
