@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<rss version="2.0">
+    <channel>
+        <copyright>Copyright (c) 2026 Yahoo Inc. All rights reserved.</copyright>
+        <description>Latest Financial News for SAN.MC, BBVA.MC, AAPL, NVDA</description>
+        <item>
+            <title>Nvidia supera expectativas: ¿Y ahora qué?</title>
+            <link>https://es.finance.yahoo.com/noticias/nvidia-supera-expectativas-070655065.html</link>
+            <pubDate>Wed, 18 Nov 2026 07:06:55 +0000</pubDate>
+            <description>Investing.com - Nvidia (NASDAQ: NVDA) publicó el martes 17 de noviembre unos ingresos del tercer trimestre fiscal de 115.800 millones de dólares, un 103% más interanual y muy por encima de lo que esperaba el consenso.</description>
+        </item>
+        <item>
+            <title>Las acciones de Samsung Electro-Mechanics suben por acuerdo ampliado con Nvidia</title>
+            <link>https://es.finance.yahoo.com/noticias/acciones-samsung-electro-mechanics-suben-065747109.html</link>
+            <pubDate>Wed, 18 Nov 2026 06:57:47 +0000</pubDate>
+            <description>Investing.com - Las acciones de Samsung Electro-Mechanics se dispararon el miércoles después de que la compañía anunciara una asociación ampliada con Nvidia (NASDAQ:NVDA) para suministrar sustratos avanzados.</description>
+        </item>
+        <item>
+            <title>Apple trabaja para restaurar sistemas tras interrupciones globales y descarta ciberataque</title>
+            <link>https://es-us.finanzas.yahoo.com/noticias/apple-trabaja-restaurar-sistemas-interrupciones-192434869.html</link>
+            <pubDate>Tue, 17 Nov 2026 19:47:46 +0000</pubDate>
+            <description>Apple ($AAPL) trabaja para restablecer sus sistemas después de que una actualización interna provocara interrupciones generalizadas en las herramientas de empleados y operaciones de tiendas.</description>
+        </item>
+        <item>
+            <title>Elemento malformado sin enlace para probar tolerancia a fallos</title>
+            <description>Esta entrada no tiene etiqueta link y debe ser ignorada por el parser sin lanzar excepciones.</description>
+        </item>
+    </channel>
+</rss>
