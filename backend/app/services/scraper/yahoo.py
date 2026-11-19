@@ -1,12 +1,11 @@
 """
-Extractor de noticias financieras para Yahoo Finance.
+Extractor de noticias financieras para Yahoo Finance (edición en español e internacional).
 Utiliza peticiones HTTP asíncronas con httpx, reintentos con backoff exponencial
-y parseo de estructura HTML/RSS mediante BeautifulSoup.
+y parseo de estructura XML/RSS y HTML mediante BeautifulSoup.
 """
 
 import asyncio
 from datetime import datetime, timezone
-import logging
 import re
 from typing import Optional
 from urllib.parse import urljoin
@@ -18,13 +17,31 @@ from app.schemas.article import ArticleCreate
 from app.services.scraper.base import BaseScraper, logger
 
 
+DEFAULT_WATCHLIST = ["AAPL", "NVDA", "MSFT", "TSLA", "SAN.MC", "BBVA.MC", "ITX.MC"]
+
+
 class YahooFinanceScraper(BaseScraper):
     """Extractor asíncrono de noticias financieras desde Yahoo Finance."""
 
-    def __init__(self, base_url: str = "https://finance.yahoo.com"):
+    def __init__(
+        self,
+        tickers: Optional[list[str]] = None,
+        region: str = "ES",
+        lang: str = "es-ES",
+        base_url: str = "https://es.finance.yahoo.com"
+    ):
         super().__init__(source_name="yahoo_finance", base_url=base_url)
-        self.news_url = f"{self.base_url}/news/"
-        self.rss_url = "https://finance.yahoo.com/news/rssindex"
+        self.tickers = tickers or DEFAULT_WATCHLIST
+        self.region = region
+        self.lang = lang
+
+        # Endpoint oficial de feeds RSS por simbolos (el antiguo /news/rssindex devuelve 404)
+        tickers_param = ",".join(self.tickers)
+        self.rss_url = (
+            f"https://feeds.finance.yahoo.com/rss/2.0/headline"
+            f"?s={tickers_param}&region={self.region}&lang={self.lang}"
+        )
+        self.news_url = f"{self.base_url}/noticias/"
         self.timeout = 10.0
         self.max_retries = 3
 
@@ -63,16 +80,16 @@ class YahooFinanceScraper(BaseScraper):
 
     def _extract_tickers(self, text: str) -> list[str]:
         """
-        Busca patrones de tickers bursatiles en el texto (ej: $AAPL, (TSLA), o palabras clave conocidas).
+        Busca patrones de tickers bursatiles en el texto (ej: $AAPL, (NASDAQ: NVDA), (NASDAQ:NVDA)).
         """
         found = set()
 
-        # 1. Tickers con signo de dolar (ej: $NVDA)
-        dollar_tickers = re.findall(r"\$([A-Z]{1,5})\b", text)
+        # 1. Tickers con signo de dolar (ej: $NVDA o $AAPL)
+        dollar_tickers = re.findall(r"\$([A-Z]{1,5}(?:\.[A-Z]{1,2})?)\b", text)
         found.update(dollar_tickers)
 
-        # 2. Tickers entre parentesis habituales (ej: (NASDAQ: AAPL) o (AAPL))
-        parenthesis_tickers = re.findall(r"\((?:[A-Z]+:\s*)?([A-Z]{1,5})\)", text)
+        # 2. Tickers entre parentesis habituales (ej: (NASDAQ: NVDA), (NASDAQ:NVDA) o (AAPL))
+        parenthesis_tickers = re.findall(r"\((?:[A-Z]+:\s*)?([A-Z]{1,5}(?:\.[A-Z]{1,2})?)\)", text)
         found.update(parenthesis_tickers)
 
         return sorted(list(found))
@@ -80,13 +97,13 @@ class YahooFinanceScraper(BaseScraper):
     def parse_articles_from_html(self, content: str, limit: int = 20) -> list[ArticleCreate]:
         """
         Parsea el contenido descargado. Soporta tanto feed RSS/XML
-        como tarjetas HTML de la sección de noticias.
+        como tarjetas HTML de la sección de noticias en español o inglés.
         """
         articles: list[ArticleCreate] = []
 
-        # Si el contenido es un feed RSS/XML
+        # Si el contenido es un feed RSS/XML (usamos parser 'xml' de lxml para que <link> no quede vacio)
         if "<rss" in content or "<feed" in content or "<channel>" in content:
-            soup = BeautifulSoup(content, "xml" if "xml" in BeautifulSoup.__doc__ else "html.parser")
+            soup = BeautifulSoup(content, "xml")
             items = soup.find_all("item")
 
             for item in items:
@@ -104,6 +121,9 @@ class YahooFinanceScraper(BaseScraper):
 
                     title = title_elem.get_text(strip=True)
                     url = link_elem.get_text(strip=True)
+                    if not url:
+                        continue
+
                     raw_desc = desc_elem.get_text(strip=True) if desc_elem else title
 
                     # Limpiamos etiquetas HTML residuales en la descripcion
@@ -142,14 +162,14 @@ class YahooFinanceScraper(BaseScraper):
 
             return articles
 
-        # Si es pagina HTML normal de Yahoo Finance
+        # Si es pagina HTML normal de Yahoo Finanzas
         soup = BeautifulSoup(content, "html.parser")
 
-        # Buscamos enlaces a noticias dentro de etiquetas h2, h3 o articulos
-        news_cards = soup.find_all(["li", "div", "article"], class_=lambda c: c and any(k in str(c) for k in ["stream-item", "story-item", "news-item", "card"]))
-
-
-
+        # Buscamos enlaces a noticias dentro de tarjetas de stream o articulos
+        news_cards = soup.find_all(
+            ["li", "div", "article"],
+            class_=lambda c: c and any(k in str(c) for k in ["stream-item", "story-item", "news-item", "card"])
+        )
 
         if not news_cards:
             # Fallback generico: buscar titulares h3 con enlace
@@ -165,8 +185,8 @@ class YahooFinanceScraper(BaseScraper):
                     continue
 
                 href = link["href"]
-                # Solo enlaces a noticias
-                if "/news/" not in href and "/m/" not in href:
+                # Solo enlaces a noticias (soporte para rutas /noticias/ en español y /news/ en ingles)
+                if "/noticias/" not in href and "/news/" not in href and "/m/" not in href:
                     continue
 
                 full_url = urljoin(self.base_url, href)
@@ -179,7 +199,7 @@ class YahooFinanceScraper(BaseScraper):
                 content_text = p_elem.get_text(strip=True) if p_elem else title
 
                 if len(content_text) < 20:
-                    content_text = f"{title}. Noticia financiera destacada en el portal Yahoo Finance."
+                    content_text = f"{title}. Noticia financiera destacada en el portal Yahoo Finanzas."
 
                 tickers = self._extract_tickers(f"{title} {content_text}")
 
