@@ -127,3 +127,20 @@ async def test_pipeline_deduplication_on_second_run(test_session: AsyncSession, 
     # El total en base de datos debe seguir siendo 2
     repo = ArticleRepository(test_session)
     assert await repo.count_articles() == 2
+
+
+@pytest.mark.asyncio
+async def test_pipeline_error_isolation(test_session: AsyncSession, mock_articles_yahoo):
+    """Si un scraper falla por error de conexión, el pipeline debe continuar con los demás."""
+    scrapers = [
+        MockScraper("broken_source", [], should_fail=True),
+        MockScraper("yahoo_finance", mock_articles_yahoo)
+    ]
+
+    pipeline = NewsIngestionPipeline(scrapers=scrapers)
+    stats = await pipeline.run(session=test_session)
+
+    # La fuente rota no guardó nada, pero Yahoo sí
+    assert stats.new_inserted == 2
+    assert stats.by_source.get("yahoo_finance") == 2
+    assert "broken_source" not in stats.by_source
