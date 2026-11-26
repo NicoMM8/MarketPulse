@@ -106,3 +106,24 @@ async def test_pipeline_full_run_success(test_session: AsyncSession, mock_articl
     repo = ArticleRepository(test_session)
     total_in_db = await repo.count_articles()
     assert total_in_db == 3
+
+
+@pytest.mark.asyncio
+async def test_pipeline_deduplication_on_second_run(test_session: AsyncSession, mock_articles_yahoo):
+    """Verifica que una segunda ejecución del pipeline con las mismas noticias no duplica registros."""
+    scraper = MockScraper("yahoo_finance", mock_articles_yahoo)
+    pipeline = NewsIngestionPipeline(scrapers=[scraper])
+
+    # 1. Primera ejecución: guarda 2
+    stats1 = await pipeline.run(session=test_session)
+    assert stats1.new_inserted == 2
+    assert stats1.duplicates_skipped == 0
+
+    # 2. Segunda ejecución: las 2 deben ser descartadas por duplicadas
+    stats2 = await pipeline.run(session=test_session)
+    assert stats2.new_inserted == 0
+    assert stats2.duplicates_skipped == 2
+
+    # El total en base de datos debe seguir siendo 2
+    repo = ArticleRepository(test_session)
+    assert await repo.count_articles() == 2
