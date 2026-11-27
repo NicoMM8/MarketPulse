@@ -144,3 +144,22 @@ async def test_pipeline_error_isolation(test_session: AsyncSession, mock_article
     assert stats.new_inserted == 2
     assert stats.by_source.get("yahoo_finance") == 2
     assert "broken_source" not in stats.by_source
+
+
+@pytest.mark.asyncio
+async def test_pipeline_run_single_source(test_session: AsyncSession, mock_articles_yahoo, mock_articles_investing):
+    """Comprueba que run_single ejecuta únicamente el portal solicitado."""
+    scrapers = [
+        MockScraper("yahoo_finance", mock_articles_yahoo),
+        MockScraper("investing", mock_articles_investing)
+    ]
+
+    pipeline = NewsIngestionPipeline(scrapers=scrapers)
+
+    # Ejecutamos solo Investing
+    stats = await pipeline.run_single(session=test_session, source_name="investing")
+
+    assert stats.total_scraped == 1
+    assert stats.new_inserted == 1
+    assert "investing" in stats.by_source
+    assert "yahoo_finance" not in stats.by_source
